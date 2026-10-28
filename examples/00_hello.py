@@ -3,7 +3,7 @@ import compas_urc as urc
 
 IP_ADDRESS = "192.168.10.10"
 
-ur = urc.UrClient(IP_ADDRESS)
+ur = urc.URClient(IP_ADDRESS)
 ur.connect()
 print("Connected, driver running on the robot.")
 

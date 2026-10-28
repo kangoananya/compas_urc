@@ -19,12 +19,12 @@ IP_ADDRESS = "192.168.10.10"
 
 CENTER = Point(230.0, 475.0, 120.0)  # mm, in the robot base coordinate system
 
-SPEED = 200.0  # mm/s
-ACCEL = 200.0  # mm/s2
+SPEED = 10.0  # mm/s
+ACCEL = 100.0  # mm/s2
 TRAVEL_SPEED = 100.0  # mm/s, for the approach and retract moves
 TRAVEL_ACCEL = 500.0  # mm/s2
 
-SEMI_AXIS_X = 70.0  # mm, along base x
+SEMI_AXIS_X = 100.0  # mm, along base x
 SEMI_AXIS_Y = 50.0  # mm, along base y
 LAYER_HEIGHT = 1.0  # mm
 LAYERS = 30
@@ -57,7 +57,7 @@ def ellipse_spiral(center, xaxis, yaxis, a, b, layer_height, layers, spacing):
 
 
 if __name__ == "__main__":
-    ur = urc.UrClient(IP_ADDRESS)
+    ur = urc.URClient(IP_ADDRESS)
     ur.connect()
     print("Connected to controller {}.{}".format(*ur.controller_version[:2]))
 

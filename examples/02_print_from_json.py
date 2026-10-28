@@ -49,7 +49,7 @@ if __name__ == "__main__":
     toggles = [item["toggle"] for item in data]
     print("{} frames loaded from {}".format(len(frames), PRINT_FILE))
 
-    ur = urc.UrClient(IP_ADDRESS)
+    ur = urc.URClient(IP_ADDRESS)
     ur.connect()
     start_time = time.time()
 

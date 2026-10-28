@@ -8,7 +8,7 @@ can have any number of points.
 from .client import DriverError
 from .client import FutureResult
 from .client import TimeoutException
-from .client import UrClient
+from .client import URClient
 from .instructions import End
 from .instructions import GetFrame
 from .instructions import GetJoints
@@ -27,7 +27,7 @@ from .instructions import WaitTime
 __version__ = '0.1.0'
 
 __all__ = [
-    'UrClient',
+    'URClient',
     'FutureResult',
     'DriverError',
     'TimeoutException',

@@ -2,7 +2,7 @@
 
 Usage follows compas_rrc::
 
-    ur = UrClient('192.168.10.10')
+    ur = URClient('192.168.10.10')
     ur.connect()
     ur.send(SetTcp(tcp_frame))  # compas frames in millimeters
     for frame in frames:
@@ -29,7 +29,7 @@ from .rtde import RTDE_PORT
 from .rtde import RTDEConnection
 from .rtde import RTDEError
 
-__all__ = ['UrClient', 'FutureResult', 'DriverError', 'TimeoutException']
+__all__ = ['URClient', 'FutureResult', 'DriverError', 'TimeoutException']
 
 SCRIPT_PORT = 30002
 
@@ -78,7 +78,7 @@ class FutureResult(object):
         self._event.set()
 
 
-class UrClient(object):
+class URClient(object):
     """Streams instructions to a UR robot through RTDE registers.
 
     Parameters

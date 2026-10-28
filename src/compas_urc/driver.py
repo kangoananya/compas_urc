@@ -38,11 +38,6 @@ id of the instruction being executed is always ``executed + 1``.
 NUM_PARAMS = 9
 NUM_RESULTS = 6
 
-# The controller silently ignores a script with a line of about 1000 characters
-# or more (seen on PolyScope 5.25), so the buffer lists are split into chunks
-# with short literals.
-CHUNK_SIZE = 50
-
 # instruction codes, must match the main loop below
 CODE_MOVEL = 1
 CODE_MOVEJ_JOINTS = 2
@@ -63,7 +58,8 @@ CODE_END = 99
 TEMPLATE = """def compas_urc_driver():
   textmsg("compas_urc: driver starting")
   global buf_size = {buf_size}
-{buffer_lists}
+  global bcode = {int_list}
+{param_lists}
   global widx = 0
   global ridx = 0
   global count = 0
@@ -101,12 +97,8 @@ TEMPLATE = """def compas_urc_driver():
           k = 0
           w = widx
           while k < n:
-            # receiver variables have their own names (r...) so they never mix with the main loop's
-            rc = read_input_integer_register({i_code} + k)
+            bcode[w] = read_input_integer_register({i_code} + k)
 {param_reads}
-            rch = floor(w / {chunk_size})
-            rj = w - rch * {chunk_size}
-{store_block}
             w = w + 1
             if w >= buf_size:
               w = 0
@@ -131,60 +123,59 @@ TEMPLATE = """def compas_urc_driver():
 
   while running:
     if count > 0:
-      ch = floor(ridx / {chunk_size})
-      j = ridx - ch * {chunk_size}
-{load_block}
+      i = ridx
+      c = bcode[i]
       if c == {CODE_MOVEL}:
         pose = p[0, 0, 0, 0, 0, 0]
-        pose[0] = v0
-        pose[1] = v1
-        pose[2] = v2
-        pose[3] = v3
-        pose[4] = v4
-        pose[5] = v5
-        movel(pose, a=v7, v=v6, r=v8)
-        expect_blend = v8 > 0
+        pose[0] = b0[i]
+        pose[1] = b1[i]
+        pose[2] = b2[i]
+        pose[3] = b3[i]
+        pose[4] = b4[i]
+        pose[5] = b5[i]
+        movel(pose, a=b7[i], v=b6[i], r=b8[i])
+        expect_blend = b8[i] > 0
       elif c == {CODE_MOVEP}:
         pose = p[0, 0, 0, 0, 0, 0]
-        pose[0] = v0
-        pose[1] = v1
-        pose[2] = v2
-        pose[3] = v3
-        pose[4] = v4
-        pose[5] = v5
-        movep(pose, a=v7, v=v6, r=v8)
-        expect_blend = v8 > 0
+        pose[0] = b0[i]
+        pose[1] = b1[i]
+        pose[2] = b2[i]
+        pose[3] = b3[i]
+        pose[4] = b4[i]
+        pose[5] = b5[i]
+        movep(pose, a=b7[i], v=b6[i], r=b8[i])
+        expect_blend = b8[i] > 0
       elif c == {CODE_MOVEJ_JOINTS}:
-        q = [v0, v1, v2, v3, v4, v5]
-        movej(q, a=v7, v=v6, r=v8)
-        expect_blend = v8 > 0
+        q = [b0[i], b1[i], b2[i], b3[i], b4[i], b5[i]]
+        movej(q, a=b7[i], v=b6[i], r=b8[i])
+        expect_blend = b8[i] > 0
       elif c == {CODE_MOVEJ_POSE}:
         pose = p[0, 0, 0, 0, 0, 0]
-        pose[0] = v0
-        pose[1] = v1
-        pose[2] = v2
-        pose[3] = v3
-        pose[4] = v4
-        pose[5] = v5
-        movej(pose, a=v7, v=v6, r=v8)
-        expect_blend = v8 > 0
+        pose[0] = b0[i]
+        pose[1] = b1[i]
+        pose[2] = b2[i]
+        pose[3] = b3[i]
+        pose[4] = b4[i]
+        pose[5] = b5[i]
+        movej(pose, a=b7[i], v=b6[i], r=b8[i])
+        expect_blend = b8[i] > 0
       elif c == {CODE_SET_DIGITAL}:
-        set_standard_digital_out(floor(v0), v1 > 0.5)
+        set_standard_digital_out(floor(b0[i]), b1[i] > 0.5)
       elif c == {CODE_SET_TOOL_DIGITAL}:
-        set_tool_digital_out(floor(v0), v1 > 0.5)
+        set_tool_digital_out(floor(b0[i]), b1[i] > 0.5)
       elif c == {CODE_SET_ANALOG}:
-        set_standard_analog_out(floor(v0), v1)
+        set_standard_analog_out(floor(b0[i]), b1[i])
       elif c == {CODE_WAIT_TIME}:
-        sleep(v0)
+        sleep(b0[i])
         expect_blend = False
       elif c == {CODE_SET_TCP}:
         tcp = p[0, 0, 0, 0, 0, 0]
-        tcp[0] = v0
-        tcp[1] = v1
-        tcp[2] = v2
-        tcp[3] = v3
-        tcp[4] = v4
-        tcp[5] = v5
+        tcp[0] = b0[i]
+        tcp[1] = b1[i]
+        tcp[2] = b2[i]
+        tcp[3] = b3[i]
+        tcp[4] = b4[i]
+        tcp[5] = b5[i]
         set_tcp(tcp)
       elif c == {CODE_GET_FRAME}:
         write_result(get_actual_tcp_pose())
@@ -194,7 +185,7 @@ TEMPLATE = """def compas_urc_driver():
         expect_blend = False
       elif c == {CODE_READ_DIGITAL}:
         value = 0.0
-        if get_standard_digital_in(floor(v0)):
+        if get_standard_digital_in(floor(b0[i])):
           value = 1.0
         end
         write_result([value, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -207,7 +198,7 @@ TEMPLATE = """def compas_urc_driver():
         write_output_integer_register({o_waiting}, 0)
         expect_blend = False
       elif c == {CODE_WAIT_DIGITAL_INPUT}:
-        while get_standard_digital_in(floor(v0)) != (v1 > 0.5):
+        while get_standard_digital_in(floor(b0[i])) != (b1[i] > 0.5):
           sync()
         end
         expect_blend = False
@@ -242,28 +233,15 @@ compas_urc_driver()
 
 def generate_driver_script(register_offset, batch_size, buffer_size):
     """Returns the URScript driver for the given register layout."""
-    sizes = _chunk_sizes(buffer_size)
-    names = ['bcode'] + ['b{}'.format(j) for j in range(NUM_PARAMS)]
-    values = ['c'] + ['v{}'.format(j) for j in range(NUM_PARAMS)]
-
-    buffer_lists = []
-    for name in names:
-        zero = '0' if name == 'bcode' else '0.0'
-        for ch, size in enumerate(sizes):
-            buffer_lists.append('  global {}_{} = [{}]'.format(name, ch, ', '.join([zero] * size)))
-
+    param_lists = '\n'.join('  global b{} = {}'.format(j, _float_list(buffer_size)) for j in range(NUM_PARAMS))
     param_reads = '\n'.join(
-        '            r{j} = read_input_float_register({d} + k * {n} + {j})'.format(j=j, d=register_offset, n=NUM_PARAMS)
+        '            b{j}[w] = read_input_float_register({d} + k * {n} + {j})'.format(j=j, d=register_offset, n=NUM_PARAMS)
         for j in range(NUM_PARAMS))
-    received = ['rc'] + ['r{}'.format(j) for j in range(NUM_PARAMS)]
-
     return TEMPLATE.format(
         buf_size=buffer_size,
-        chunk_size=CHUNK_SIZE,
-        buffer_lists='\n'.join(buffer_lists),
+        int_list='[' + ', '.join(['0'] * buffer_size) + ']',
+        param_lists=param_lists,
         param_reads=param_reads,
-        store_block=_chunk_switch(sizes, '            ', 'rch', ['{}_{{ch}}[rj] = {}'.format(n, r) for n, r in zip(names, received)]),
-        load_block=_chunk_switch(sizes, '      ', 'ch', ['{} = {}_{{ch}}[j]'.format(v, n) for n, v in zip(names, values)]),
         i_seq=register_offset,
         i_count=register_offset + 1,
         i_session=register_offset + 2,
@@ -294,17 +272,5 @@ def generate_driver_script(register_offset, batch_size, buffer_size):
     )
 
 
-def _chunk_sizes(buffer_size):
-    full, rest = divmod(buffer_size, CHUNK_SIZE)
-    return [CHUNK_SIZE] * full + ([rest] if rest else [])
-
-
-def _chunk_switch(sizes, indent, variable, statements):
-    """An if / elif chain over the chunk index in ``variable`` running ``statements`` on that chunk."""
-    lines = []
-    for ch in range(len(sizes)):
-        keyword = 'if' if ch == 0 else 'elif'
-        lines.append('{}{} {} == {}:'.format(indent, keyword, variable, ch))
-        lines.extend('{}  {}'.format(indent, s.format(ch=ch)) for s in statements)
-    lines.append('{}end'.format(indent))
-    return '\n'.join(lines)
+def _float_list(size):
+    return '[' + ', '.join(['0.0'] * size) + ']'

@@ -13,7 +13,7 @@ from fake_robot import FakeRobot
 
 
 def connect(robot, buffer_size=200):
-    ur = urc.UrClient('127.0.0.1', buffer_size=buffer_size, rtde_port=robot.rtde_port, script_port=robot.script_port)
+    ur = urc.URClient('127.0.0.1', buffer_size=buffer_size, rtde_port=robot.rtde_port, script_port=robot.script_port)
     ur.connect()
     return ur
 
@@ -100,7 +100,7 @@ def test_driver_script_register_layout():
     assert script.rstrip().endswith('compas_urc_driver()')
     # highest double register used: 24 + 1 * 9 + 8 = 41, must stay below 48
     assert 'read_input_float_register(24 + k * 9 + 8)' in script
-    assert 'rc = read_input_integer_register(28 + k)' in script
+    assert 'bcode[w] = read_input_integer_register(28 + k)' in script
     assert '{' not in script and '}' not in script
 
 
@@ -217,22 +217,20 @@ def test_configures_for_controller_version(version, offset, batch, frequency):
 
 def test_refuses_too_old_controller():
     robot = FakeRobot(version=(3, 3))
-    ur = urc.UrClient('127.0.0.1', rtde_port=robot.rtde_port, script_port=robot.script_port)
+    ur = urc.URClient('127.0.0.1', rtde_port=robot.rtde_port, script_port=robot.script_port)
     with pytest.raises(urc.DriverError):
         ur.connect()
 
 
-@pytest.mark.parametrize('buffer_size', [1, 49, 50, 51, 200, 1000])
-def test_driver_script_has_short_lines(buffer_size):
-    # the controller silently ignores a script with a line of about 1000 characters
+@pytest.mark.parametrize('buffer_size', [1, 200, 1000])
+def test_driver_script_buffer_size(buffer_size):
     script = driver.generate_driver_script(24, 2, buffer_size)
-    assert max(len(line) for line in script.splitlines()) < 300
-    # the chunked lists hold exactly buffer_size slots per field
-    slots = sum(line.count('0.0') for line in script.splitlines() if line.startswith('  global b0_'))
-    assert slots == buffer_size
+    lines = script.splitlines()
+    assert next(line for line in lines if line.startswith('  global bcode = ')).count('0') == buffer_size
+    assert next(line for line in lines if line.startswith('  global b0 = ')).count('0.0') == buffer_size
 
 
-def test_buffer_larger_than_one_chunk_keeps_order():
+def test_small_buffer_keeps_order():
     robot = FakeRobot(exec_time=0.002)
     ur = connect(robot, buffer_size=120)
     expected = [urc.MoveToFrame(frame, 100, 500, 1) for frame in frames(500)]

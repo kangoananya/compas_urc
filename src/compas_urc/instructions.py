@@ -230,7 +230,7 @@ class ReadDigital(ReadInstruction):
 
 
 class WaitForResume(Instruction):
-    """The robot stops here until :meth:`UrClient.resume` is called."""
+    """The robot stops here until :meth:`URClient.resume` is called."""
     code = driver.CODE_WAIT_RESUME
 
 

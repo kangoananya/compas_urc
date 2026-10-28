@@ -24,7 +24,7 @@ import math
 from compas.geometry import Frame
 import compas_urc as urc
 
-ur = urc.UrClient("192.168.10.10")
+ur = urc.URClient("192.168.10.10")
 ur.connect()  # uploads the driver to the robot and starts it
 
 # TCP offset from the flange, in mm
@@ -142,7 +142,7 @@ Your PC does not need to be real-time: it only has to keep the buffer from runni
 
 ### Underruns
 
-If the buffer runs empty while the robot blends, the robot stops at the last point and `ur.underruns` goes up. This should not happen in normal use. If it does, increase `buffer_size`, e.g. `UrClient(ip, buffer_size=500)`.
+If the buffer runs empty while the robot blends, the robot stops at the last point and `ur.underruns` goes up. This should not happen in normal use. If it does, increase `buffer_size`, e.g. `URClient(ip, buffer_size=500)`.
 
 ### Blend radius
 
@@ -159,7 +159,7 @@ Works with CB3 (PolyScope 3.4 or newer) and e-Series. The client reads the contr
 | CB3 3.9+ | 125 Hz | 24–47 |
 | CB3 3.4–3.8 | 125 Hz | 0–23 |
 
-You can override both: `UrClient(ip, register_offset=0, frequency=125)`.
+You can override both: `URClient(ip, register_offset=0, frequency=125)`.
 
 - **e-Series:** the robot must be in **remote control** mode (the driver is uploaded over the network). CB3 has no such mode.
 - **CB3 is slower to stream:** at 125 Hz, roughly 100 instructions per second, versus several hundred on e-Series. That is enough for 2 mm points at 100 mm/s, but very dense paths at high speed may need sparser points.
