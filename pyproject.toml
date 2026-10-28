@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "compas_urc"
+description = "compas_rrc-style remote control for Universal Robots: stream frames and IO to a buffer on the robot over RTDE."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ email = "akango@ethz.ch" }]
+keywords = ["compas", "universal robots", "ur", "rtde", "robotic fabrication", "3d printing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = ["compas>=2.0"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.dynamic]
+version = { attr = "compas_urc.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
