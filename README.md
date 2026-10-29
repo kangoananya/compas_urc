@@ -174,4 +174,4 @@ pip install -e .[dev]
 pytest
 ```
 
-The tests run against a fake controller (`tests/fake_robot.py`) that speaks RTDE and imitates the driver in Python. They test the client, not the URScript driver.
+The tests run against a fake controller (`tests/fake_robot.py`) that speaks RTDE and imitates the driver in Python. They test the client, **not the URScript driver**.
