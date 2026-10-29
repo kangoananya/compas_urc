@@ -11,7 +11,7 @@ from compas.geometry import Frame
 
 import compas_urc as urc
 
-IP_ADDRESS = "192.168.10.10"
+IP_ADDRESS = "127.0.0.1"
 
 # the extruder from 02_print_from_json.py; set MASS to the real tool weight in kg,
 # or leave it None to keep the payload set on the robot
