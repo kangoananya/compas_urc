@@ -46,6 +46,7 @@ class FakeRobot(object):
         self.outputs = {'runtime_state': 1, 'robot_status_bits': 3, 'actual_TCP_pose': [0.0] * 6,
                         'actual_q': [0.1, -1.5, 1.5, -1.5, -1.5, 0.0], 'actual_digital_input_bits': 0}
         self.executed_log = []
+        self.scripts = []  # every uploaded script
         self.max_count = 0
         self.driver_running = False
         self.lock = threading.Lock()
@@ -127,6 +128,7 @@ class FakeRobot(object):
             except socket.timeout:
                 pass
             script = data.decode()
+            self.scripts.append(script)
             if 'def compas_urc_driver' in script:
                 threading.Thread(target=self._run_driver, args=(script,), daemon=True).start()
             elif 'compas_urc_abort' in script:

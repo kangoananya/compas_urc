@@ -21,7 +21,9 @@ __all__ = [
     'SetToolDigital',
     'SetAnalog',
     'WaitTime',
-    'SetTcp',
+    'Tool',
+    'SetTool',
+    'PrintText',
     'ReadInstruction',
     'GetFrame',
     'GetJoints',
@@ -153,12 +155,65 @@ class WaitTime(Instruction):
         super(WaitTime, self).__init__([seconds])
 
 
-class SetTcp(Instruction):
-    """Set the TCP offset as a frame in millimeters, relative to the tool flange."""
-    code = driver.CODE_SET_TCP
+class Tool(object):
+    """A tool on the flange: TCP frame and, optionally, payload.
 
-    def __init__(self, frame):
-        super(SetTcp, self).__init__(frame_to_pose(frame))
+    UR controllers keep no named tools as ABB controllers do, so the tool is
+    defined in Python and sent to the robot with :class:`SetTool`.
+
+    Parameters
+    ----------
+    frame : :class:`compas.geometry.Frame`
+        TCP frame in millimeters, relative to the tool flange.
+    mass : float, optional
+        Payload in kg. By default the payload set on the robot is kept.
+    cog : list of float, optional
+        Center of gravity in millimeters, relative to the tool flange.
+        By default the TCP point.
+    name : str, optional
+        Only for printing.
+    """
+
+    def __init__(self, frame, mass=None, cog=None, name=None):
+        if not isinstance(frame, Frame):
+            raise TypeError('Expected a compas.geometry.Frame, got {}'.format(type(frame).__name__))
+        if mass is not None and mass < 0:
+            raise ValueError('mass must be positive')
+        self.frame = frame
+        self.mass = mass
+        self.cog = list(cog) if cog is not None else list(frame.point)
+        self.name = name
+
+    def __repr__(self):
+        return 'Tool({!r}, frame={}, mass={})'.format(self.name, self.frame, self.mass)
+
+
+class SetTool(Instruction):
+    """Set the TCP and, if the tool has a mass, the payload."""
+    code = driver.CODE_SET_TOOL
+
+    def __init__(self, tool):
+        if not isinstance(tool, Tool):
+            raise TypeError('Expected a Tool, got {}'.format(type(tool).__name__))
+        mass = -1.0 if tool.mass is None else tool.mass
+        super(SetTool, self).__init__(frame_to_pose(tool.frame) + [mass] + [x / 1000 for x in tool.cog])
+        self.tool = tool
+
+
+class PrintText(Instruction):
+    """Write a message to the robot log when the robot gets to this point.
+
+    Strings do not fit in RTDE registers, so the robot only passes the
+    instruction; when it is executed the client sends the message as a
+    secondary program, which runs next to the driver. It shows up in the log
+    a few milliseconds after the robot has passed this point.
+    """
+    code = driver.CODE_PRINT_TEXT
+
+    def __init__(self, text):
+        super(PrintText, self).__init__()
+        # URScript strings cannot contain double quotes or line breaks
+        self.text = ' '.join(str(text).replace('"', "'").split())
 
 
 class ReadInstruction(Instruction):

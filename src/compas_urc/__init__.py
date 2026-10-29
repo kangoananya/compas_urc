@@ -18,8 +18,10 @@ from .instructions import MoveToJoints
 from .instructions import ReadDigital
 from .instructions import SetAnalog
 from .instructions import SetDigital
-from .instructions import SetTcp
+from .instructions import PrintText
+from .instructions import SetTool
 from .instructions import SetToolDigital
+from .instructions import Tool
 from .instructions import WaitForDigitalInput
 from .instructions import WaitForResume
 from .instructions import WaitTime
@@ -38,7 +40,9 @@ __all__ = [
     'SetToolDigital',
     'SetAnalog',
     'WaitTime',
-    'SetTcp',
+    'Tool',
+    'SetTool',
+    'PrintText',
     'GetFrame',
     'GetJoints',
     'ReadDigital',

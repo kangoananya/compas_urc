@@ -4,7 +4,7 @@ Usage follows compas_rrc::
 
     ur = URClient('192.168.10.10')
     ur.connect()
-    ur.send(SetTcp(tcp_frame))  # compas frames in millimeters
+    ur.send(SetTool(Tool(tcp_frame)))  # compas frames in millimeters
     for frame in frames:
         ur.send(MoveToFrame(frame, speed=50, accel=500, blend=1))
     ur.send_and_wait(SetDigital(1, True))
@@ -16,6 +16,7 @@ as full as possible. The PC does not need to be real-time: it only has to keep
 the robot buffer from running empty.
 """
 import collections
+import queue
 import random
 import socket
 import threading
@@ -23,6 +24,7 @@ import time
 
 from . import driver
 from .instructions import End
+from .instructions import PrintText
 from .instructions import ReadInstruction
 from .instructions import WaitForResume
 from .rtde import RTDE_PORT
@@ -126,6 +128,8 @@ class URClient(object):
         self._error = None
         self._closing = False
         self._sender = None
+        self._messages = queue.Queue()  # PrintText messages to send, None stops the printer
+        self._printer = None
 
     # connection
 
@@ -171,6 +175,8 @@ class URClient(object):
 
         self._sender = threading.Thread(target=self._send_loop, daemon=True)
         self._sender.start()
+        self._printer = threading.Thread(target=self._print_loop, daemon=True)
+        self._printer.start()
 
     def close(self, timeout=None):
         """Waits until all sent instructions are executed, ends the driver and disconnects."""
@@ -181,6 +187,7 @@ class URClient(object):
         with self._lock:
             self._closing = True
             self._lock.notify_all()
+        self._stop_printer()
         self.rtde.close()
         self.rtde = None
 
@@ -197,6 +204,7 @@ class URClient(object):
         for io, value in (digital_outputs or {}).items():
             lines.append('  set_standard_digital_out({}, {})'.format(io, 'True' if value else 'False'))
         lines += ['  textmsg("compas_urc: aborted")', 'end', 'compas_urc_abort()']
+        self._messages.put(None)
         self.upload_script('\n'.join(lines) + '\n')
         self._fail(DriverError('Aborted'))
         if self.rtde:
@@ -362,6 +370,8 @@ class URClient(object):
                         else:
                             future._set(instruction.parse_result(values))
                     else:
+                        if isinstance(instruction, PrintText):
+                            self._messages.put(instruction.text)
                         future._set()
                 if state['runtime_state'] in (RUNTIME_STOPPING, RUNTIME_STOPPED) and not self._closing:
                     self._fail_locked(DriverError('Robot program stopped'))
@@ -418,3 +428,21 @@ class URClient(object):
                     self._sent = last_seq
         except (OSError, RTDEError) as error:
             self._fail(DriverError('Sending failed: {}'.format(error)))
+
+    def _print_loop(self):
+        # a secondary program runs next to the driver without replacing it
+        while True:
+            text = self._messages.get()
+            if text is None:
+                return
+            try:
+                self.upload_script('sec compas_urc_print():\n  textmsg("{}")\nend\n'.format(text))
+            except OSError:
+                pass
+
+    def _stop_printer(self):
+        """Sends the messages still queued, then stops the printer thread."""
+        if self._printer:
+            self._messages.put(None)
+            self._printer.join(5.0)
+            self._printer = None

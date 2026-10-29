@@ -37,7 +37,7 @@ id of the instruction being executed is always ``executed + 1``.
 
 import os
 
-NUM_PARAMS = 9
+NUM_PARAMS = 10
 NUM_RESULTS = 6
 
 # instruction codes, must match the main loop in driver.script
@@ -48,13 +48,14 @@ CODE_SET_DIGITAL = 4
 CODE_SET_TOOL_DIGITAL = 5
 CODE_SET_ANALOG = 6
 CODE_WAIT_TIME = 7
-CODE_SET_TCP = 8
+CODE_SET_TOOL = 8
 CODE_MOVEP = 9
 CODE_GET_FRAME = 10
 CODE_GET_JOINTS = 11
 CODE_READ_DIGITAL = 12
 CODE_WAIT_RESUME = 13
 CODE_WAIT_DIGITAL_INPUT = 14
+CODE_PRINT_TEXT = 15  # nothing to do on the robot: the client sends the text when it is executed
 CODE_END = 99
 
 with open(os.path.join(os.path.dirname(__file__), "driver.script")) as _f:
@@ -97,7 +98,7 @@ def generate_driver_script(register_offset, batch_size, buffer_size):
         CODE_SET_TOOL_DIGITAL=CODE_SET_TOOL_DIGITAL,
         CODE_SET_ANALOG=CODE_SET_ANALOG,
         CODE_WAIT_TIME=CODE_WAIT_TIME,
-        CODE_SET_TCP=CODE_SET_TCP,
+        CODE_SET_TOOL=CODE_SET_TOOL,
         CODE_MOVEP=CODE_MOVEP,
         CODE_GET_FRAME=CODE_GET_FRAME,
         CODE_GET_JOINTS=CODE_GET_JOINTS,

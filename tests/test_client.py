@@ -35,7 +35,8 @@ def check_log(robot, expected):
 def test_streams_all_instructions_in_order():
     robot = FakeRobot(exec_time=0.0005)
     ur = connect(robot)
-    expected = [urc.SetTcp(Frame.from_axis_angle_vector([0, math.pi, 0], point=[-44.29, -59.34, 189.65]))]
+    tool = urc.Tool(Frame.from_axis_angle_vector([0, math.pi, 0], point=[-44.29, -59.34, 189.65]), mass=1.2)
+    expected = [urc.SetTool(tool)]
     for i, frame in enumerate(frames(5000)):
         expected.append(urc.MoveToFrame(frame, 100, 500, 2))
         if i % 500 == 0:
@@ -98,8 +99,8 @@ def test_driver_script_register_layout():
     script = driver.generate_driver_script(24, 2, 100)
     assert 'def compas_urc_driver():' in script
     assert script.rstrip().endswith('compas_urc_driver()')
-    # highest double register used: 24 + 1 * 9 + 8 = 41, must stay below 48
-    assert 'read_input_float_register(24 + k * 9 + 8)' in script
+    # highest double register used: 24 + 1 * 10 + 9 = 43, must stay below 48
+    assert 'read_input_float_register(24 + k * 10 + 9)' in script
     assert 'bcode[w] = read_input_integer_register(28 + k)' in script
     assert '{' not in script and '}' not in script
 
@@ -238,3 +239,23 @@ def test_small_buffer_keeps_order():
         ur.send(instruction)
     ur.close(timeout=30)
     check_log(robot, expected)
+
+
+def test_set_tool_sends_tcp_and_payload():
+    tcp = Frame.from_axis_angle_vector([0, math.pi, 0], point=[0, 0, 190])
+    instruction = urc.SetTool(urc.Tool(tcp, mass=1.5, cog=[0, 10, 80]))
+    assert instruction.params == pytest.approx(frame_to_pose(tcp) + [1.5, 0.0, 0.01, 0.08])
+    # without a mass the payload on the robot is kept, the cog defaults to the TCP point
+    instruction = urc.SetTool(urc.Tool(tcp))
+    assert instruction.params[6] == -1.0
+    assert instruction.params[7:] == pytest.approx([0.0, 0.0, 0.19])
+
+
+def test_print_text_is_sent_when_executed():
+    robot = FakeRobot()
+    ur = connect(robot)
+    ur.send(urc.MoveToFrame(frames(1)[0], 100, 500))
+    ur.send_and_wait(urc.PrintText('layer "1"\ndone'))
+    ur.close(timeout=10)
+    printed = [s for s in robot.scripts if s.startswith('sec compas_urc_print')]
+    assert printed == ['sec compas_urc_print():\n  textmsg("layer \'1\' done")\nend\n']

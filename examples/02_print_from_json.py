@@ -25,7 +25,7 @@ ACCEL = 100.0  # mm/s2
 Z_OFFSET = 0.9  # mm, fine tuning of the first layer
 
 WORKOBJECT = Frame.from_points(Point(514.20, 99.0, -8.95), Point(494.6, 273.5, -9.62), Point(364.59, 219.5, -8.70))
-TCP = Frame.from_axis_angle_vector([0.0, math.pi, 0.0], point=[-44.29, -59.34, 189.65])
+EXTRUDER = urc.Tool(Frame.from_axis_angle_vector([0.0, math.pi, 0.0], point=[-44.29, -59.34, 189.65]), name="extruder")
 
 
 # extruder wiring: DO1 False + DO2 False + DO3 True = extruding, DO1 True = off
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     try:
-        ur.send(urc.SetTcp(TCP))
+        ur.send(urc.SetTool(EXTRUDER))
         extruding = None
         for i, frame in enumerate(frames):
             blend = 0.0 if i == 0 or i == len(frames) - 1 else blends[i]

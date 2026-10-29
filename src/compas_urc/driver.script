@@ -98,8 +98,12 @@ def compas_urc_driver():
       elif c == {CODE_MOVEJ_POSE}:
         movej(pose_at(i), a=b7[i], v=b6[i], r=b8[i])
         expect_blend = b8[i] > 0
-      elif c == {CODE_SET_TCP}:
+      elif c == {CODE_SET_TOOL}:
         set_tcp(pose_at(i))
+        # a negative mass keeps the payload set on the robot
+        if b6[i] >= 0:
+          set_payload(b6[i], [b7[i], b8[i], b9[i]])
+        end
 
       # io
       elif c == {CODE_SET_DIGITAL}:

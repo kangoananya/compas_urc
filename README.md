@@ -10,6 +10,13 @@ Remote control for Universal Robots in the style of [compas_rrc](https://github.
 ## Install
 
 ```bash
+pip install git+https://github.com/kangoananya/compas_urc.git
+```
+
+or, to work on it:
+
+```bash
+git clone https://github.com/kangoananya/compas_urc.git
 cd compas_urc
 pip install -e .
 ```
@@ -26,8 +33,9 @@ import compas_urc as urc
 ur = urc.URClient("192.168.10.10")
 ur.connect()  # uploads the driver to the robot and starts it
 
-# TCP offset from the flange, in mm
-ur.send(urc.SetTcp(Frame.from_axis_angle_vector([0, math.pi, 0], point=[0, 0, 190])))
+# TCP offset from the flange in mm, payload in kg
+extruder = urc.Tool(Frame.from_axis_angle_vector([0, math.pi, 0], point=[0, 0, 190]), mass=1.2)
+ur.send(urc.SetTool(extruder))
 
 for frame in frames:  # compas frames in mm, robot base coordinates
     ur.send(urc.MoveToFrame(frame, speed=50, accel=200, blend=0.5))
@@ -57,13 +65,31 @@ All lengths in millimeters, angles in radians, time in seconds.
 | `SetToolDigital(io, value)` | set a tool digital output |
 | `SetAnalog(io, value)` | set a standard analog output (0..1) |
 | `WaitTime(seconds)` | wait; the robot stops, no blending through it |
-| `SetTcp(frame)` | set the TCP offset from the flange |
+| `SetTool(tool)` | set the TCP and, if `tool.mass` is given, the payload (see below) |
+| `PrintText(text)` | write a message to the robot log when the robot gets here |
 | `GetFrame(immediate=False)` | returns the TCP frame (mm) |
 | `GetJoints(immediate=False)` | returns the joint values (rad) |
 | `ReadDigital(io, immediate=False)` | returns a standard digital input (0-7) as a bool |
 | `WaitForResume()` | stops until you call `ur.resume()` |
 | `WaitForDigitalInput(io, value=True)` | stops until a standard digital input (0-7) has the value |
 | `End()` | end the driver program (`close()` sends this for you) |
+
+### Tools
+
+UR controllers have no named tools as ABB controllers do, so a tool is defined in Python:
+
+```python
+extruder = urc.Tool(tcp_frame, mass=1.2, cog=[0, 0, 80], name="extruder")
+ur.send(urc.SetTool(extruder))
+```
+
+- `frame`: TCP frame in mm, relative to the tool flange.
+- `mass`: payload in kg. Leave it out to keep the payload set on the robot.
+- `cog`: center of gravity in mm, relative to the flange. By default the TCP point.
+
+### Printing text
+
+`PrintText("layer 3")` writes to the robot log (the Log tab on the teach pendant), like `rrc.PrintText`. Text cannot be sent through RTDE registers, so the robot only passes the instruction; when it is executed, the client sends the message as a secondary program (`sec`) that runs next to the driver. The message appears a few milliseconds after the robot has passed that point. Double quotes and line breaks are replaced.
 
 ### Motion types
 
