@@ -1,0 +1,171 @@
+def compas_urc_driver():
+  textmsg("compas_urc: driver starting")
+
+  # ring buffer: one instruction code and NUM_PARAMS parameters per slot
+  global buf_size = {buf_size}
+  global bcode = {int_list}
+{param_lists}
+  global widx = 0
+  global ridx = 0
+  global count = 0
+
+  global last_seq = 0
+  global executed = 0
+  global underruns = 0
+  global running = True
+  global expect_blend = False
+
+  write_output_integer_register({o_ack}, 0)
+  write_output_integer_register({o_executed}, 0)
+  write_output_integer_register({o_underruns}, 0)
+  write_output_integer_register({o_result_seq}, 0)
+  write_output_integer_register({o_waiting}, 0)
+
+  # pose from the first six parameters of buffer slot i
+  def pose_at(i):
+    pose = p[0, 0, 0, 0, 0, 0]
+    pose[0] = b0[i]
+    pose[1] = b1[i]
+    pose[2] = b2[i]
+    pose[3] = b3[i]
+    pose[4] = b4[i]
+    pose[5] = b5[i]
+    return pose
+  end
+
+  # results are written to the output registers, then the driver waits one
+  # cycle so the PC receives them before the next result can overwrite them
+  def write_result(values):
+    k = 0
+    while k < 6:
+      write_output_float_register({o_result} + k, values[k])
+      k = k + 1
+    end
+    write_output_integer_register({o_result_seq}, executed + 1)
+    sync()
+  end
+
+  # copies new batches from the input registers into the buffer
+  thread receiver():
+    while True:
+      seq = read_input_integer_register({i_seq})
+      if seq != last_seq:
+        n = read_input_integer_register({i_count})
+        if n <= buf_size - count:
+          k = 0
+          w = widx
+          while k < n:
+            bcode[w] = read_input_integer_register({i_code} + k)
+{param_reads}
+            w = w + 1
+            if w >= buf_size:
+              w = 0
+            end
+            k = k + 1
+          end
+          enter_critical
+          widx = w
+          count = count + n
+          exit_critical
+          last_seq = seq
+          write_output_integer_register({o_ack}, seq)
+        end
+      end
+      sync()
+    end
+  end
+
+  receiver_thrd = run receiver()
+  write_output_integer_register({o_session}, read_input_integer_register({i_session}))
+  textmsg("compas_urc: driver ready")
+
+  # executes instructions from the buffer
+  while running:
+    if count > 0:
+      i = ridx
+      c = bcode[i]
+
+      # motion
+      if c == {CODE_MOVEL}:
+        movel(pose_at(i), a=b7[i], v=b6[i], r=b8[i])
+        expect_blend = b8[i] > 0
+      elif c == {CODE_MOVEP}:
+        movep(pose_at(i), a=b7[i], v=b6[i], r=b8[i])
+        expect_blend = b8[i] > 0
+      elif c == {CODE_MOVEJ_JOINTS}:
+        movej([b0[i], b1[i], b2[i], b3[i], b4[i], b5[i]], a=b7[i], v=b6[i], r=b8[i])
+        expect_blend = b8[i] > 0
+      elif c == {CODE_MOVEJ_POSE}:
+        movej(pose_at(i), a=b7[i], v=b6[i], r=b8[i])
+        expect_blend = b8[i] > 0
+      elif c == {CODE_SET_TCP}:
+        set_tcp(pose_at(i))
+
+      # io
+      elif c == {CODE_SET_DIGITAL}:
+        set_standard_digital_out(floor(b0[i]), b1[i] > 0.5)
+      elif c == {CODE_SET_TOOL_DIGITAL}:
+        set_tool_digital_out(floor(b0[i]), b1[i] > 0.5)
+      elif c == {CODE_SET_ANALOG}:
+        set_standard_analog_out(floor(b0[i]), b1[i])
+
+      # waits
+      elif c == {CODE_WAIT_TIME}:
+        sleep(b0[i])
+        expect_blend = False
+      elif c == {CODE_WAIT_RESUME}:
+        write_output_integer_register({o_waiting}, executed + 1)
+        while read_input_integer_register({i_resume}) < executed + 1:
+          sync()
+        end
+        write_output_integer_register({o_waiting}, 0)
+        expect_blend = False
+      elif c == {CODE_WAIT_DIGITAL_INPUT}:
+        while get_standard_digital_in(floor(b0[i])) != (b1[i] > 0.5):
+          sync()
+        end
+        expect_blend = False
+
+      # queries
+      elif c == {CODE_GET_FRAME}:
+        write_result(get_actual_tcp_pose())
+        expect_blend = False
+      elif c == {CODE_GET_JOINTS}:
+        write_result(get_actual_joint_positions())
+        expect_blend = False
+      elif c == {CODE_READ_DIGITAL}:
+        value = 0.0
+        if get_standard_digital_in(floor(b0[i])):
+          value = 1.0
+        end
+        write_result([value, 0.0, 0.0, 0.0, 0.0, 0.0])
+        expect_blend = False
+
+      elif c == {CODE_END}:
+        running = False
+      end
+
+      ridx = ridx + 1
+      if ridx >= buf_size:
+        ridx = 0
+      end
+      enter_critical
+      count = count - 1
+      exit_critical
+      executed = executed + 1
+      write_output_integer_register({o_executed}, executed)
+    else:
+      if expect_blend:
+        # the previous move was blended but nothing follows: the robot stops there
+        underruns = underruns + 1
+        write_output_integer_register({o_underruns}, underruns)
+        expect_blend = False
+      end
+      sync()
+    end
+  end
+
+  kill receiver_thrd
+  textmsg("compas_urc: driver finished")
+end
+compas_urc_driver()
