@@ -4,9 +4,8 @@ Remote control for Universal Robots in the style of [compas_rrc](https://github.
 
 - **Any path length.** Instructions are streamed to the robot while it moves, so a print path can have 100 000 points or more.
 - **IO in sync with motion.** Digital outputs are switched by the robot between the moves, not by your PC, so an extruder turns on and off at the right point, even with blending.
-- **No ROS, no Docker.** Pure Python, connects directly to the robot over RTDE.
+- **Pure python.** Connects directly to the robot over RTDE.
 
-> **Status: alpha.** The Python side is tested against a simulated controller. Test new setups in the air, at low speed, with a hand on the emergency stop.
 
 ## Install
 
