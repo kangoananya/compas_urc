@@ -15,17 +15,22 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
 ]
-dependencies = ["compas>=2.0"]
+dependencies = [
+    "compas>=2.0",
+]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "ruff>=0.17.3"]
 
 [tool.setuptools.dynamic]
 version = { attr = "compas_urc.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+compas_urc = ["*.script"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
