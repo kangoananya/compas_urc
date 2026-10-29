@@ -17,7 +17,7 @@ from compas.geometry import Translation
 
 import compas_urc as urc
 
-IP_ADDRESS = "192.168.10.10"
+IP_ADDRESS = "127.0.0.1"
 PRINT_FILE = os.path.join(os.path.dirname(__file__), "data", "out_printpoints.json")
 
 SPEED = 100.0  # mm/s

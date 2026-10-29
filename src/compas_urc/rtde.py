@@ -1,6 +1,6 @@
 """Minimal client for the Universal Robots RTDE protocol (version 2).
 
-Only what ur_rrc needs: setting up one output and one input recipe,
+Only what compas_urc needs: setting up one output and one input recipe,
 receiving output packages in a background thread and sending input packages.
 Protocol reference: UR support article "Real-Time Data Exchange (RTDE) Guide".
 """

@@ -15,7 +15,7 @@ from compas.geometry import Translation
 
 import compas_urc as urc
 
-IP_ADDRESS = "192.168.10.10"
+IP_ADDRESS = "127.0.0.1"
 
 CENTER = Point(230.0, 475.0, 120.0)  # mm, in the robot base coordinate system
 

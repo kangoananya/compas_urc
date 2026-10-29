@@ -1,7 +1,7 @@
-"""First connection: starts the driver and reads where the robot is. Nothing moves."""
+"""First connection: starts the driver and reads where the robot is."""
 import compas_urc as urc
 
-IP_ADDRESS = "192.168.10.10"
+IP_ADDRESS = "127.0.0.1"
 
 ur = urc.URClient(IP_ADDRESS)
 ur.connect()
