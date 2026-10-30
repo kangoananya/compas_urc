@@ -89,7 +89,7 @@ ur.send(urc.SetTool(extruder))
 
 ### Printing text
 
-`PrintText("layer 3")` writes to the robot log (the Log tab on the teach pendant), like `rrc.PrintText`. Text cannot be sent through RTDE registers, so the robot only passes the instruction; when it is executed, the client sends the message as a secondary program (`sec`) that runs next to the driver. The message appears a few milliseconds after the robot has passed that point. Double quotes and line breaks are replaced.
+`PrintText("layer 3")` writes to the robot log (the Log tab on the teach pendant), like `rrc.PrintText`. Text cannot be sent through RTDE registers, so the robot only passes the instruction; when it is executed, the client sends the message as a secondary program (`sec`) that runs next to the driver. Sending a message takes about 0.5 s, so print per layer, not per point. Double quotes and line breaks are replaced.
 
 ### Motion types
 
